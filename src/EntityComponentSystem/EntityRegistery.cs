@@ -4,23 +4,25 @@ using System.Linq;
 
 namespace PMDEvers.EntityComponentSystem
 {
-    public class EntityRegistery : IEntityRegistery
+    public class EntityRegistery
     {
-        private static readonly object _locker = new object();
+        private static readonly object locker = new object();
 
-        private readonly IDictionary<IEntityRecord, IDictionary<Type, IComponent>> _records =
-            new Dictionary<IEntityRecord, IDictionary<Type, IComponent>>();
+        private readonly IDictionary<Type, EntitySystem> _systems = new Dictionary<Type, EntitySystem>();
 
-        public IEnumerable<IComponent> this[IEntityRecord record] => GetComponentsForRecord(record).Values;
+        private readonly IDictionary<EntityRecord, IDictionary<Type, Component>> _records =
+            new Dictionary<EntityRecord, IDictionary<Type, Component>>();
+
+        public IEnumerable<Component> this[EntityRecord record] => GetComponentsForRecord(record).Values;
 
         public int Count => _records.Count;
 
-        public IEnumerable<IEntityRecord> All()
+        public IEnumerable<EntityRecord> All()
         {
             return _records.Keys;
         }
 
-        public IEntityRecord FindByName(string name)
+        public EntityRecord FindByName(string name)
         {
             return _records.Keys.FirstOrDefault(x => x.Name == name);
         }
@@ -30,12 +32,12 @@ namespace PMDEvers.EntityComponentSystem
             return _records.Keys.Any(x => x.Name == name);
         }
 
-        public bool Contains(IEntityRecord record)
+        public bool Contains(EntityRecord record)
         {
             return _records.ContainsKey(record);
         }
 
-        public IEntityRecord Create(string name)
+        public EntityRecord Create(string name)
         {
             var record = new EntityRecord(name, this);
 
@@ -44,9 +46,9 @@ namespace PMDEvers.EntityComponentSystem
             return record;
         }
 
-        public bool Add(IEntityRecord record, IComponent component)
+        public bool Add(EntityRecord record, Component component)
         {
-            lock (_locker)
+            lock (locker)
             {
                 var components = GetComponentsForRecord(record);
 
@@ -68,7 +70,7 @@ namespace PMDEvers.EntityComponentSystem
             return true;
         }
 
-        public bool Remove(IEntityRecord record, IComponent component)
+        public bool Remove(EntityRecord record, Component component)
         {
             if (record == null || component == null)
                 return false;
@@ -79,7 +81,7 @@ namespace PMDEvers.EntityComponentSystem
             var componentWasRemoved = false;
             var components = GetComponentsForRecord(record);
 
-            lock (_locker)
+            lock (locker)
             {
                 if (components.Count > 0)
                 {
@@ -95,7 +97,7 @@ namespace PMDEvers.EntityComponentSystem
             return componentWasRemoved;
         }
 
-        public bool Remove(IEntityRecord record)
+        public bool Remove(EntityRecord record)
         {
             if (record == null || !Contains(record))
                 return false;
@@ -104,7 +106,7 @@ namespace PMDEvers.EntityComponentSystem
 
             var components = GetComponentsForRecord(record);
 
-            lock (_locker)
+            lock (locker)
             {
                 if (components != null && components.Count > 0)
                 {
@@ -122,13 +124,13 @@ namespace PMDEvers.EntityComponentSystem
             return recordDeleted;
         }
 
-        public IEnumerable<T> GetComponentsOf<T>() where T : class, IComponent
+        public IEnumerable<T> GetComponentsOf<T>() where T : Component
         {
             var type = typeof(T);
             return _records.Values.Where(x => x.ContainsKey(type)).Select(x => x[type]).Cast<T>();
         }
 
-        public TComponent GetComponent<TComponent>(IEntityRecord record) where TComponent : class, IComponent
+        public TComponent GetComponent<TComponent>(EntityRecord record) where TComponent : Component
         {
             if (record == null || !Contains(record))
                 return default;
@@ -150,27 +152,87 @@ namespace PMDEvers.EntityComponentSystem
             return result;
         }
 
-        public IEntityRecord Create()
+        public EntityRecord Create()
         {
             return Create(Guid.NewGuid().ToString());
         }
 
-        public void Add(IEntityRecord record)
+        public void Add(EntityRecord record)
         {
             Add(record, null);
         }
 
-        public IEnumerable<IComponent> GetComponents(IEntityRecord record)
+        public IEnumerable<Component> GetComponents(EntityRecord record)
         {
             return GetComponentsForRecord(record).Values;
         }
 
-        private IDictionary<Type, IComponent> GetComponentsForRecord(IEntityRecord record)
+        public bool AddSystem(EntitySystem system)
         {
-            lock (_locker)
+            lock (locker)
+            {
+                var type = system.GetType();
+                if(_systems.ContainsKey(type))
+                    return false;
+
+                system.Registery = this;
+                _systems.Add(type, system);
+                return true;
+            }
+        }
+
+        public bool ContainsSystem(EntitySystem system)
+        {
+            return _systems.ContainsKey(system.GetType());
+        }
+
+        public bool RemoveSystem(EntitySystem system)
+        {
+            if (system == null)
+                return false;
+
+            lock (locker)
+            {
+                return _systems.Remove(system.GetType());
+            }
+        }
+
+        public TSystem GetSystem<TSystem>() where TSystem : EntitySystem
+        {
+            var result = default(TSystem);
+            if (_systems.Count > 0)
+            {
+                var componentType = typeof(TSystem);
+
+                if (_systems.ContainsKey(componentType))
+                    result = (TSystem)_systems[componentType];
+                else
+                    foreach (var type in _systems.Keys)
+                        if (typeof(TSystem).IsAssignableFrom(type))
+                            return (TSystem)_systems[type];
+            }
+
+            return result;
+        }
+
+        public void Update(float delta)
+        {
+            var enumerator = _systems.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var system = enumerator.Current;
+                system.Value.Update(delta);
+            }
+            enumerator.Dispose();
+        }
+
+
+        private IDictionary<Type, Component> GetComponentsForRecord(EntityRecord record)
+        {
+            lock (locker)
             {
                 if (!_records.ContainsKey(record))
-                    _records[record] = new Dictionary<Type, IComponent>();
+                    _records[record] = new Dictionary<Type, Component>();
 
                 return _records[record];
             }

@@ -3,15 +3,15 @@
 [assembly:InternalsVisibleTo("PMDEvers.EntityComponentSystem.Test")]
 namespace PMDEvers.EntityComponentSystem
 {
-    internal struct EntityRecord : IEntityRecord
+    public class EntityRecord
     {
-        internal EntityRecord(string name, IEntityRegistery registry)
+        internal EntityRecord(string name, EntityRegistery registry)
         {
             Name = name;
             Registery = registry;
         }
 
         public string Name { get; }
-        public IEntityRegistery Registery { get; }
+        public EntityRegistery Registery { get; }
     }
 }

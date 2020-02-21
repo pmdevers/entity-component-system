@@ -246,6 +246,21 @@ namespace PMDEvers.EntityComponentSystem.Test
         }
 
         [Fact]
+        public void RemoveComponent_Removes_Component_From_Entity()
+        {
+            var registery = new EntityRegistery();
+            var record = registery.Create();
+            var component = new TestComponent();
+            record.AddComponent(component);
+
+            Assert.NotNull(record.GetComponent<TestComponent>());
+            Assert.True(record.RemoveComponent(component));
+
+            Assert.Null(record.GetComponent<TestComponent>());
+            Assert.False(record.RemoveComponent(component));
+        }
+
+        [Fact]
         public void GetComponentsOf_Returns_Correct_Number_Of_Components()
         {
             var registery = new EntityRegistery();

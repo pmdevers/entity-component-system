@@ -4,14 +4,14 @@ using System.Text;
 
 namespace PMDEvers.EntityComponentSystem.Test
 {
-    public class TestComponent : IComponent
+    public class TestComponent : Component
     {
-        public IEntityRecord Record { get; set; }
+        
     }
 
-    public class TestComponent2 : IComponent
+    public class TestComponent2 : Component
     {
-        public IEntityRecord Record { get; set; }
+        
     }
 
     public class InheritedComponent : TestComponent
