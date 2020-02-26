@@ -108,7 +108,7 @@ namespace PMDEvers.EntityComponentSystem.Test
             record1.AddComponent(component1);
             
             Assert.False(registery.Remove(null, null));
-            Assert.False(registery.Remove(null));
+            Assert.False(registery.Remove((EntityRecord)null));
         }
 
         [Fact]

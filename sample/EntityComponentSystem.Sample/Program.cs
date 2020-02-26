@@ -10,9 +10,10 @@ namespace EntityComponentSystem.Sample
         {
             var registery = new EntityRegistery();
 
-            registery.AddSystem(new SampleSystem());
+            registery.Add(new SampleSystem());
 
             var e = registery.Create();
+
             e.AddComponent(new SampleComponent());
 
 

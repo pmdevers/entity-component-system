@@ -167,7 +167,7 @@ namespace PMDEvers.EntityComponentSystem
             return GetComponentsForRecord(record).Values;
         }
 
-        public bool AddSystem(EntitySystem system)
+        public bool Add(EntitySystem system)
         {
             lock (locker)
             {
@@ -181,12 +181,12 @@ namespace PMDEvers.EntityComponentSystem
             }
         }
 
-        public bool ContainsSystem(EntitySystem system)
+        public bool Contains(EntitySystem system)
         {
             return _systems.ContainsKey(system.GetType());
         }
 
-        public bool RemoveSystem(EntitySystem system)
+        public bool Remove(EntitySystem system)
         {
             if (system == null)
                 return false;
@@ -197,7 +197,7 @@ namespace PMDEvers.EntityComponentSystem
             }
         }
 
-        public TSystem GetSystem<TSystem>() where TSystem : EntitySystem
+        public TSystem Get<TSystem>() where TSystem : EntitySystem
         {
             var result = default(TSystem);
             if (_systems.Count > 0)
@@ -225,8 +225,7 @@ namespace PMDEvers.EntityComponentSystem
             }
             enumerator.Dispose();
         }
-
-
+        
         private IDictionary<Type, Component> GetComponentsForRecord(EntityRecord record)
         {
             lock (locker)
